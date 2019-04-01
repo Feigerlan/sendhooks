@@ -27,16 +27,27 @@ type Events struct {
 func (o *GiteventController) Post() {
 	var ob Events
 	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
-	fmt.Printf("%+v",ob)
+	//fmt.Printf("%+v",ob)
 	//fmt.Printf(ob.Object_kind)
 	if ob.Event_name == "tag_push" {
            fmt.Println("接收到tag请求！")
+           o.Data["json"] = ob
+		   o.ServeJSON()
 		}
 	if ob.Event_name == "repository_update" {
 		fmt.Println("接收到仓库更新请求！")
+		o.Data["json"] = ob
+		o.ServeJSON()
 	}
 	if ob.Event_name == "push" {
 		fmt.Println("接收到puth请求！")
+		o.Data["json"] = ob
+		o.ServeJSON()
+	}else{
+		fmt.Println("请求参数错误！")
+		o.Ctx.Output.Status = 402
+		o.Data["json"] = "请求参数错误！"
+		o.ServeJSON()
 	}
 
 }
@@ -75,7 +86,7 @@ func (o *GiteventController) Get() {
 // @Failure 403 :objectId is empty
 // @router / [get]
 func (o *GiteventController) GetAll() {
-	println("123")
+	//println("123")
 	obs := models.GetAll()
 	o.Data["json"] = obs
 	o.ServeJSON()

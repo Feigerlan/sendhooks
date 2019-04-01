@@ -12,7 +12,7 @@ import (
 type GitmergeController struct {
 	beego.Controller
 }
-//合并请求结构体
+//定义接收到的合并请求结构体
 type MergeRequest struct {
 	Object_kind string 						`json:"object_kind"`
 	User User 								`json:"user"`
@@ -21,13 +21,13 @@ type MergeRequest struct {
 	Labeles bool                            `json:"labeles"`
 	Repository Repository                   `json:"repository"`
 }
-
+//定义接收到的合并请求结构体中user
 type User struct {
 	Name string           `json:"name"`
 	Username string       `json:"username"`
 	Avatar_url string     `json:"avatar_url"`
 }
-
+//定义接收到的合并请求结构体中的project
 type Project struct {
 	 Name string           `json:"name"`
 	 Description string    `json:"description"`
@@ -44,7 +44,7 @@ type Object_Attributes struct {
 	Updated_at string 					`json:"updated_at"`
 	Merge_status string					`json:"merge_status"`
 }
-
+//定义接收到的合并请求结构体Repository信息
 type Repository struct {
 	Name string 					`json:"name"`
 	Url string                      `json:"url"`
@@ -52,9 +52,7 @@ type Repository struct {
 	Homepage string 				`json:"homepage"`
 
 }
-
-//Tag events
-
+//返回消息
 
 
 
@@ -74,8 +72,14 @@ func (o *GitmergeController) Post() {
 	//fmt.Printf(ob.Object_kind)
 	if ob.Object_kind == "merge_request" {
            fmt.Println("接收到合并请求！")
+           fmt.Printf("%+v",ob)
+		   o.Data["json"] = ob
+		   o.ServeJSON()
 		} else{
 		fmt.Println("请求参数错误！")
+		o.Ctx.Output.Status = 402
+		o.Data["json"] = "请求参数错误！"
+		o.ServeJSON()
 	}
 
 }
