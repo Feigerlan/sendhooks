@@ -70,17 +70,20 @@ func typeof(v interface{}) string {
 // @Failure 403 body is empty
 // @router / [post]
 func (o *GitmergeController) Post() {
+	//初始化一个合并请求对像用于接收hooks发过来的json
 	var ob MergeRequest
+	//将hooks发过来的json反序列化并交内容写到ob对像的地址中
 	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 	//fmt.Printf(ob.Object_kind)
+	//如果检测到其中有合并请求的字段
 	if ob.Object_kind == "merge_request" {
            fmt.Println("接收到合并请求！")
            //fmt.Printf("%+v",ob)
            fmt.Printf(typeof(ob))
 		   o.Data["json"] = ob
 		   o.ServeJSON()
-		   sendmsg("http://baidu.com")
-		} else{
+		   sendmsg("http://baidu.com",ob)
+		} else{        //如果没有合并请求的字段返回错误码
 		fmt.Println("请求参数错误！")
 		o.Ctx.Output.Status = 402
 		o.Data["json"] = "请求参数错误！"
@@ -90,10 +93,7 @@ func (o *GitmergeController) Post() {
 }
 
 
-func sendmsg(url string){
-	var mm = make(map[string]interface{})
-	mm["userID"] = "lanxiahui"
-	mm["pwd"] = "123456"
+func sendmsg(url string,mm MergeRequest){
 	jsonStr, err := json.Marshal(mm)
 	if err != nil {
 		fmt.Println(err)
@@ -102,13 +102,17 @@ func sendmsg(url string){
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	//初始化一个http客户端
 	client := &http.Client{}
+	//发送请求，接收结果和错误
 	resp, err := client.Do(req)
-
+	//如果错误不为空，打印错误
 	if err != nil {
 		panic(err)
 	}
+	//最终关闭
 	defer resp.Body.Close()
+	//打印服务返回的状态码
 	fmt.Println("response Status:", resp.Status)
+	//打印返回的头部
 	fmt.Println("response Headers:", resp.Header)
 	//取出body
 	body, _ := ioutil.ReadAll(resp.Body)
