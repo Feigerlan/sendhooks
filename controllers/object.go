@@ -66,7 +66,6 @@ func (o *ObjectController) Put() {
 	objectId := o.Ctx.Input.Param(":objectId")
 	var ob models.Object
 	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
-
 	err := models.Update(objectId, ob.Score)
 	if err != nil {
 		o.Data["json"] = err.Error()

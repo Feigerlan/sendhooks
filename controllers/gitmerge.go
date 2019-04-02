@@ -1,12 +1,16 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/astaxie/beego"
+	"io/ioutil"
+	"net/http"
 	"reflect"
 	"sendhooks/models"
 )
+
 
 // Operations about object
 type GitmergeController struct {
@@ -52,7 +56,6 @@ type Repository struct {
 	Homepage string 				`json:"homepage"`
 
 }
-//返回消息
 
 
 
@@ -72,9 +75,11 @@ func (o *GitmergeController) Post() {
 	//fmt.Printf(ob.Object_kind)
 	if ob.Object_kind == "merge_request" {
            fmt.Println("接收到合并请求！")
-           fmt.Printf("%+v",ob)
+           //fmt.Printf("%+v",ob)
+           fmt.Printf(typeof(ob))
 		   o.Data["json"] = ob
 		   o.ServeJSON()
+		   sendmsg("http://baidu.com")
 		} else{
 		fmt.Println("请求参数错误！")
 		o.Ctx.Output.Status = 402
@@ -84,13 +89,31 @@ func (o *GitmergeController) Post() {
 
 }
 
-//func (o *GitlabController) Post() {
-//	var merge_request string
-//	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
-//	ObjectId := models.AddOne(ob)
-//	o.Data["json"] = map[string]string{"ObjectId": objectid}
-//	o.ServeJSON()
-//}
+
+func sendmsg(url string){
+	var mm = make(map[string]interface{})
+	mm["userID"] = "lanxiahui"
+	mm["pwd"] = "123456"
+	jsonStr, err := json.Marshal(mm)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(jsonStr)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+	//初始化一个http客户端
+	client := &http.Client{}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+	fmt.Println("response Status:", resp.Status)
+	fmt.Println("response Headers:", resp.Header)
+	//取出body
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
+}
 
 // @Title Get
 // @Description find object by objectid
