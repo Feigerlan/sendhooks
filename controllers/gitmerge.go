@@ -39,14 +39,29 @@ type Project struct {
 	 Git_ssh_url string     `json:"git_ssh_url"`
 	 Git_http_url string `json:"git_http_url"`
 }
-
+//定义合并请求中的对象属性
 type Object_Attributes struct {
 	Id int 								`json:"id"`
 	Target_branch string				`json:"target_branch"`
+	Source_branch string				`json:"source_branch"`
 	Title string  						`json:"title"`
 	Created_at string  					`json:"created_at"`
 	Updated_at string 					`json:"updated_at"`
 	Merge_status string					`json:"merge_status"`
+	Last_commit Last_commit				`json:"last_commit"`
+
+}
+//
+type Last_commit struct {
+	Id string		`json:"id"`
+	Message string  `json:"message"`
+	Timestamp string `json:"timestamp"`
+	Url string `json:"url"`
+    Author Author `json:"author"`
+}
+type Author struct {
+	Name string `json:"name"`
+	Email string `json:"email"`
 }
 //定义接收到的合并请求结构体Repository信息
 type Repository struct {
@@ -57,8 +72,19 @@ type Repository struct {
 
 }
 
+//定义消息接口json结构体
+type Messages struct {
+	Type string     `json:"type"`
+	Title string  	 `json:"title"`
+	Content string   `json:"content"`
+	Ways string      `json:"ways"`
+	Receiver string  `json:"receiver"`
+}
 
 
+
+
+//获取数据类型
 func typeof(v interface{}) string {
 	return reflect.TypeOf(v).String()
 }
@@ -78,11 +104,12 @@ func (o *GitmergeController) Post() {
 	//如果检测到其中有合并请求的字段
 	if ob.Object_kind == "merge_request" {
            fmt.Println("接收到合并请求！")
-           //fmt.Printf("%+v",ob)
-           fmt.Printf(typeof(ob))
-		   o.Data["json"] = ob
-		   o.ServeJSON()
-		   sendmsg("http://baidu.com",ob)
+           fmt.Printf("%+v",ob)
+           //fmt.Printf(typeof(ob))
+		   //o.Data["json"] = ob
+		   //o.ServeJSON()
+		   //调度发送消息
+		   sendmsg("http://122.152.209.199:2046/api/v1/atlassian/message/",ob)
 		} else{        //如果没有合并请求的字段返回错误码
 		fmt.Println("请求参数错误！")
 		o.Ctx.Output.Status = 402
@@ -94,12 +121,20 @@ func (o *GitmergeController) Post() {
 
 
 func sendmsg(url string,mm MergeRequest){
-	jsonStr, err := json.Marshal(mm)
+	proname := "来自"+ mm.Repository.Name + "项目的合并请求"
+	var mess Messages
+	mess.Type = "gitlab"
+	mess.Title = proname + ":" + mm.Repository.Name
+	mess.Ways = "mail,wx"
+	mess.Receiver = "feigerlan@xwfintech.com"
+	mess.Content = "项目地址：" + mm.Project.Web_url + "\n-----------发起者：" + mm.Object_attributes.Last_commit.Author.Name
+	jsonStr, err := json.Marshal(mess)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(jsonStr)
+	//fmt.Println(jsonStr)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
 	//初始化一个http客户端
 	client := &http.Client{}
 	//发送请求，接收结果和错误
@@ -108,15 +143,19 @@ func sendmsg(url string,mm MergeRequest){
 	if err != nil {
 		panic(err)
 	}
+
 	//最终关闭
 	defer resp.Body.Close()
 	//打印服务返回的状态码
-	fmt.Println("response Status:", resp.Status)
+	fmt.Println("响应状态码:", resp.Status)
 	//打印返回的头部
-	fmt.Println("response Headers:", resp.Header)
+	fmt.Println("响应头部:", resp.Header)
 	//取出body
 	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	fmt.Println("响应消息体:", string(body))
+	if resp.Status == "200 OK"{
+		fmt.Println("成功")
+	}
 }
 
 // @Title Get

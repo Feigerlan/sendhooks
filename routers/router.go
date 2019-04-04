@@ -8,11 +8,13 @@
 package routers
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/context"
 	"github.com/astaxie/beego/logs"
 	"github.com/dgrijalva/jwt-go"
+	"reflect"
 	"sendhooks/controllers"
 )
 
@@ -21,17 +23,43 @@ var (
 	key []byte = []byte("xwfintech")
 )
 
+func typeof(v interface{}) string {
+	return reflect.TypeOf(v).String()
+}
+//定义响应json 结构体
+type Response struct {
+	Data Data `json:"data"`
+}
+
+type Data struct {
+	Code int `json:"code"`
+	Msg string `json:"msg"`
+}
+
+
 func init() {
 	//生成token
 	token := GenToken()
 	fmt.Println(token)
 	//token鉴权过滤器
 	beego.InsertFilter("/*", beego.BeforeRouter, func(ctx *context.Context) {
-		authString := ctx.Input.Header("Authorization")
-		//fmt.Println("接收到带来的token:" + authString)
-		if !CheckToken(authString){
-			ctx.Output.Status = 404
-			ctx.Output.JSON("{无效token}",false,false)
+		//fmt.Printf("%+v",ctx.Input.Context.Request)
+		authString := ctx.Input.Header("X-Gitlab-Token")
+		fmt.Println("接收到带来的token:" + authString)
+		if !CheckToken(authString){   //如果检查token不通过
+			ctx.Output.Status = 406    //设置返回码
+			//设置返回字符串
+			resstr := `{"data":{"code":406 ,"msg":"token不合法"}}`
+			//初始化返回信息
+			var res Response
+			if err := json.Unmarshal([]byte(resstr), &res); err == nil {
+				//反序列化为json，如果无错则打印
+				fmt.Println(res)
+			} else {
+				fmt.Println(err)
+			}
+	        //返回给客户端信息
+			ctx.Output.JSON(res,false,false)
 		}
 		})
 
@@ -86,7 +114,7 @@ func GenToken() string {
 // 校验token是否有效
 func CheckToken(token string) bool {
 	//将TOKEN解析
-	//fmt.Println(token)
+	fmt.Println(token)
 	_, err := jwt.Parse(token, func(*jwt.Token) (interface{}, error) {
 		return key, nil
 	})
