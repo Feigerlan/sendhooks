@@ -105,11 +105,14 @@ func (o *GitmergeController) Post() {
 	if ob.Object_kind == "merge_request" {
            fmt.Println("接收到合并请求！")
            fmt.Printf("%+v",ob)
+
            //fmt.Printf(typeof(ob))
 		   //o.Data["json"] = ob
 		   //o.ServeJSON()
 		   //调度发送消息
 		   sendmsg("http://122.152.209.199:2046/api/v1/atlassian/message/",ob)
+
+		   getowner()
 		} else{        //如果没有合并请求的字段返回错误码
 		fmt.Println("请求参数错误！")
 		o.Ctx.Output.Status = 402
@@ -125,7 +128,7 @@ func sendmsg(url string,mm MergeRequest){
 	var mess Messages
 	mess.Type = "gitlab"
 	mess.Title = proname + ":" + mm.Repository.Name
-	mess.Ways = "mail,wx"
+	mess.Ways = "wx"
 	mess.Receiver = "feigerlan@xwfintech.com"
 	mess.Content = "项目地址：" + mm.Project.Web_url + "\n-----------发起者：" + mm.Object_attributes.Last_commit.Author.Name
 	jsonStr, err := json.Marshal(mess)
@@ -156,6 +159,20 @@ func sendmsg(url string,mm MergeRequest){
 	if resp.Status == "200 OK"{
 		fmt.Println("成功")
 	}
+}
+
+func getowner(){
+	pro, err := http.Get("http://gitlab.xwfintech.com/api/v4/projects/292?private_token=zC4YkdmxUr1_jBH9xy1x")
+	if err != nil{
+		println(err)
+	}
+	body, err := ioutil.ReadAll(pro.Body)
+	defer pro.Body.Close()
+	var proj map[string]interface{}
+	proj = make(map[string]interface{})
+	json.Unmarshal(body,&proj)
+	fmt.Printf("%+v",proj)
+
 }
 
 // @Title Get
